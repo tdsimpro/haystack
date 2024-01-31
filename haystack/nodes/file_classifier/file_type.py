@@ -14,7 +14,7 @@ with LazyImport() as magic_import:
     import magic
 
 
-DEFAULT_TYPES = ["txt", "pdf", "md", "docx", "html", "media"]
+DEFAULT_TYPES = ["txt", "pdf", "md", "docx", "html", "media", "csv"]
 
 DEFAULT_MEDIA_TYPES = ["mp3", "mp4", "mpeg", "m4a", "wav", "webm"]
 

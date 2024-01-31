@@ -34,7 +34,7 @@ pipelines:
     nodes:
       - name: CsvTextConverter
         inputs: [File]
-      - name: Retriever
+      - name: EmbeddingRetriever
         inputs: [ CsvTextConverter ]
       - name: DocumentStore
         inputs: [ Retriever ]

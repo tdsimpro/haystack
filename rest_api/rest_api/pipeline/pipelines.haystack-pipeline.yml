@@ -2,7 +2,7 @@
 
 version: ignore
 
-components:    # define all the building-blocks for Pipeline
+components: # define all the building-blocks for Pipeline
   - name: DocumentStore
     type: ElasticsearchDocumentStore
     params:
@@ -29,25 +29,59 @@ components:    # define all the building-blocks for Pipeline
       split_length: 1000
   - name: FileTypeClassifier
     type: FileTypeClassifier
+    params:
+       supported_types: ['txt', 'pdf', 'csv']
+  - name: EmbeddingRetriever
+    type: EmbeddingRetriever
+    params:
+      document_store: DocumentStore    # params can reference other components defined in the YAML
+      embedding_model: sentence-transformers/all-MiniLM-L6-v2
+      scale_score: False
+  - name: Doc2Answers       # custom-name for the component; helpful for visualization & debugging
+    type: Docs2Answers    # Haystack Class name for the component
+  - name: CsvTextConverter
+    type: CsvTextConverter
+  - name: JoinResults
+    params: { }
+    type: JoinDocuments
 
 pipelines:
   - name: query    # a sample extractive-qa Pipeline
     nodes:
       - name: Retriever
-        inputs: [Query]
+        inputs: [ Query ]
+      - name: EmbeddingRetriever
+        inputs: [ Query ]
+      - inputs:
+          - Retriever
+          - EmbeddingRetriever
+        name: JoinResults
       - name: Reader
-        inputs: [Retriever]
+        inputs: [ JoinResults ]
   - name: indexing
     nodes:
       - name: FileTypeClassifier
-        inputs: [File]
+        inputs: [ File ]
       - name: TextFileConverter
-        inputs: [FileTypeClassifier.output_1]
+        inputs: [ FileTypeClassifier.output_1 ]
       - name: PDFFileConverter
-        inputs: [FileTypeClassifier.output_2]
+        inputs: [ FileTypeClassifier.output_2 ]
+      - name: CsvTextConverter
+        inputs: [ FileTypeClassifier.output_3 ]
       - name: Preprocessor
-        inputs: [PDFFileConverter, TextFileConverter]
+        inputs: [ PDFFileConverter, TextFileConverter ]
       - name: Retriever
-        inputs: [Preprocessor]
+        inputs: [ Preprocessor ]
+      - name: EmbeddingRetriever
+        inputs: [ CsvTextConverter ]
       - name: DocumentStore
-        inputs: [Retriever]
+        inputs: [ Retriever, EmbeddingRetriever ]
+#      - name: indexingcsv
+#        nodes:
+#          - name: CsvTextConverter
+#            inputs: [ File ]
+#          - name: Retriever
+#            inputs: [ CsvTextConverter ]
+#          - name: DocumentStore
+#            inputs: [ Retriever ]
+
