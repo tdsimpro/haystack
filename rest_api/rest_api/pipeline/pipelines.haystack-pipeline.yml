@@ -7,11 +7,16 @@ components: # define all the building-blocks for Pipeline
     type: ElasticsearchDocumentStore
     params:
       host: localhost
+      embedding_field: question_emb
+      embedding_dim: 384
+      excluded_meta_data:
+        - question_emb
+      similarity: cosine
   - name: Retriever
     type: BM25Retriever
     params:
       document_store: DocumentStore    # params can reference other components defined in the YAML
-      top_k: 5
+      top_k: 2
   - name: Reader       # custom-name for the component; helpful for visualization & debugging
     type: FARMReader    # Haystack Class name for the component
     params:
@@ -37,27 +42,29 @@ components: # define all the building-blocks for Pipeline
       document_store: DocumentStore    # params can reference other components defined in the YAML
       embedding_model: sentence-transformers/all-MiniLM-L6-v2
       scale_score: False
+      top_k: 2
   - name: Doc2Answers       # custom-name for the component; helpful for visualization & debugging
     type: Docs2Answers    # Haystack Class name for the component
   - name: CsvTextConverter
     type: CsvTextConverter
   - name: JoinResults
-    params: { }
-    type: JoinDocuments
+    params:
+      join_mode: concatenate
+    type: JoinAnswers
 
 pipelines:
-  - name: query    # a sample extractive-qa Pipeline
+  - name: query
     nodes:
       - name: Retriever
         inputs: [ Query ]
       - name: EmbeddingRetriever
         inputs: [ Query ]
-      - inputs:
-          - Retriever
-          - EmbeddingRetriever
-        name: JoinResults
+      - name: Doc2Answers
+        inputs: [ EmbeddingRetriever ]
       - name: Reader
-        inputs: [ JoinResults ]
+        inputs: [ Retriever ]
+      - inputs: [ Reader,  Doc2Answers ]
+        name: JoinResults
   - name: indexing
     nodes:
       - name: FileTypeClassifier
@@ -76,12 +83,4 @@ pipelines:
         inputs: [ CsvTextConverter ]
       - name: DocumentStore
         inputs: [ Retriever, EmbeddingRetriever ]
-#      - name: indexingcsv
-#        nodes:
-#          - name: CsvTextConverter
-#            inputs: [ File ]
-#          - name: Retriever
-#            inputs: [ CsvTextConverter ]
-#          - name: DocumentStore
-#            inputs: [ Retriever ]
 

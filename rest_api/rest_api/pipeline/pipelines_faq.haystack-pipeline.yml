@@ -24,17 +24,17 @@ components:    # define all the building-blocks for Pipeline
     type: CsvTextConverter
 
 pipelines:
+  - name: indexing
+    nodes:
+      - name: CsvTextConverter
+        inputs: [ File ]
+      - name: Retriever
+        inputs: [ CsvTextConverter ]
+      - name: DocumentStore
+        inputs: [ Retriever ]
   - name: query    # a sample extractive-qa Pipeline
     nodes:
       - name: Retriever
         inputs: [Query]
       - name: Doc2Answers
         inputs: [Retriever]
-  - name: indexing
-    nodes:
-      - name: CsvTextConverter
-        inputs: [File]
-      - name: EmbeddingRetriever
-        inputs: [ CsvTextConverter ]
-      - name: DocumentStore
-        inputs: [ Retriever ]
